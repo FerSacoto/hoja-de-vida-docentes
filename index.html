@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoja de Vida Docente</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+    .top-bar { background: #185FA5; color: white; padding: 14px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .top-bar h1 { font-size: 17px; font-weight: 600; }
+    .top-bar p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+    .container { max-width: 860px; margin: 2rem auto; padding: 0 1rem 4rem; }
+    .progress { display: flex; gap: 0; margin-bottom: 2rem; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .step-tab { flex: 1; padding: 11px 6px; font-size: 12px; border: none; background: #fff; color: #888; cursor: pointer; text-align: center; border-right: 1px solid #eee; transition: all 0.15s; font-family: inherit; }
+    .step-tab:last-child { border-right: none; }
+    .step-tab.active { background: #185FA5; color: white; font-weight: 600; }
+    .step-tab.done { background: #e8f5e9; color: #2e7d32; }
+    .card { background: white; border-radius: 12px; padding: 1.75rem; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-title { font-size: 17px; font-weight: 600; color: #185FA5; margin-bottom: 1.5rem; padding-bottom: 10px; border-bottom: 2px solid #e8f0fb; }
+    .field-group { margin-bottom: 1.1rem; }
+    .field-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
+    .field-group input, .field-group select, .field-group textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 14px; font-family: inherit; color: #1a1a1a; background: #fafafa;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+      outline: none; border-color: #185FA5; box-shadow: 0 0 0 3px rgba(24,95,165,0.1); background: #fff;
+    }
+    .field-group textarea { min-height: 90px; resize: vertical; }
+    .input-with-icon { position: relative; }
+    .input-with-icon input { padding-left: 38px; }
+    .input-with-icon .li-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 4px; background: #0A66C2; display: flex; align-items: center; justify-content: center; }
+    .input-with-icon .li-icon svg { width: 14px; height: 14px; fill: white; }
+    .hint { font-size: 12px; color: #999; margin-top: 4px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .entry-card { background: #f8f9fb; border: 1px solid #e5e9f0; border-radius: 10px; padding: 1.1rem; margin-bottom: 1rem; position: relative; }
+    .entry-card .remove-btn { position: absolute; top: 10px; right: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 3px 9px; font-size: 12px; color: #888; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .entry-card .remove-btn:hover { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+    .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; border: 2px dashed #c5d5e8; border-radius: 8px; background: transparent; color: #185FA5; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 6px; }
+    .add-btn:hover { background: #e8f0fb; border-color: #185FA5; }
+    .sep { height: 1px; background: #eee; margin: 1.5rem 0; }
+    .subsection-title { font-size: 15px; font-weight: 600; color: #444; margin-bottom: 1rem; }
+    .nav-btns { display: flex; justify-content: space-between; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #eee; }
+    .btn-prev { padding: 10px 22px; border: 1px solid #ddd; border-radius: 8px; background: white; color: #555; cursor: pointer; font-size: 14px; font-family: inherit; transition: all 0.15s; }
+    .btn-prev:hover { background: #f5f5f3; }
+    .btn-next { padding: 10px 24px; border: none; border-radius: 8px; background: #185FA5; color: white; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: all 0.15s; }
+    .btn-next:hover { background: #0C447C; }
+    .btn-download { padding: 11px 26px; border: none; border-radius: 8px; background: #185FA5; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: all 0.15s; }
+    .btn-download:hover { background: #0C447C; }
+    .btn-download:disabled { background: #ccc; cursor: not-allowed; }
+    .upload-zone { border: 2px dashed #c5d5e8; border-radius: 10px; padding: 2.5rem; text-align: center; cursor: pointer; background: #f8f9fb; transition: all 0.15s; }
+    .upload-zone:hover { background: #e8f0fb; border-color: #185FA5; }
+    .upload-zone svg { color: #aaa; }
+    .upload-zone p { font-size: 14px; color: #666; margin-top: 8px; }
+    .upload-zone small { font-size: 12px; color: #aaa; }
+    .file-list { margin-top: 1rem; }
+    .file-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: white; border: 1px solid #e0e7f0; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+    .file-item .fn { color: #1a1a1a; font-weight: 500; }
+    .file-item .fs { color: #aaa; font-size: 12px; margin-top: 2px; }
+    .file-item button { background: none; border: none; color: #aaa; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+    .file-item button:hover { color: #c62828; background: #ffebee; }
+    .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .summary-table td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+    .summary-table td:first-child { color: #888; width: 38%; }
+    .summary-section { margin-bottom: 1.5rem; }
+    .summary-section h3 { font-size: 14px; font-weight: 600; color: #185FA5; margin-bottom: 8px; }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11px; background: #e8f0fb; color: #185FA5; margin-left: 6px; font-weight: 600; }
+    .check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; cursor: pointer; }
+    .check-label input[type=checkbox] { width: auto; accent-color: #185FA5; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <h1>📋 Formulario — Hoja de Vida Docente</h1>
+    <p>Complete cada sección y descargue su hoja de vida en formato Word</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="progress">
+    <button class="step-tab active" onclick="goTo(0)">1. Personal</button>
+    <button class="step-tab" onclick="goTo(1)">2. Formación</button>
+    <button class="step-tab" onclick="goTo(2)">3. Laboral</button>
+    <button class="step-tab" onclick="goTo(3)">4. Docencia</button>
+    <button class="step-tab" onclick="goTo(4)">5. Logros</button>
+    <button class="step-tab" onclick="goTo(5)">6. Archivos</button>
+    <button class="step-tab" onclick="goTo(6)">7. Resumen</button>
+  </div>
+
+  <!-- 1. PERSONAL -->
+  <div class="card section active" id="sec-0">
+    <p class="section-title">Información personal</p>
+    <div class="grid-2">
+      <div class="field-group"><label>Nombres *</label><input type="text" id="nombres" placeholder="Nombres completos"></div>
+      <div class="field-group"><label>Apellidos *</label><input type="text" id="apellidos" placeholder="Apellidos completos"></div>
+    </div>
+    <div class="grid-3">
+      <div class="field-group"><label>Tipo de documento</label>
+        <select id="tipo_doc"><option>Cédula de ciudadanía</option><option>Cédula de extranjería</option><option>Pasaporte</option><option>NIT</option></select>
+      </div>
+      <div class="field-group"><label>Número de documento</label><input type="text" id="num_doc" placeholder="Ej. 123456789"></div>
+      <div class="field-group"><label>Fecha de nacimiento</label><input type="date" id="fecha_nac"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Nacionalidad</label><input type="text" id="nacionalidad" placeholder="Ej. Colombiana"></div>
+      <div class="field-group"><label>Ciudad de residencia</label><input type="text" id="ciudad" placeholder="Ej. Bogotá"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Correo electrónico *</label><input type="email" id="email" placeholder="correo@ejemplo.com"></div>
+      <div class="field-group"><label>Teléfono / Celular</label><input type="tel" id="telefono" placeholder="+57 300 000 0000"></div>
+    </div>
+    <div class="field-group">
+      <label>Perfil de LinkedIn</label>
+      <div class="input-with-icon">
+        <div class="li-icon"><svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></div>
+        <input type="url" id="linkedin" placeholder="https://linkedin.com/in/su-perfil">
+      </div>
+      <p class="hint">Ingrese la URL completa de su perfil de LinkedIn</p>
+    </div>
+    <div class="field-group"><label>Perfil profesional</label><textarea id="perfil" placeholder="Breve descripción de su perfil, competencias y áreas de experticia..."></textarea></div>
+    <div class="nav-btns"><span></span><button class="btn-next" onclick="goTo(1)">Siguiente →</button></div>
+  </div>
+
+  <!-- 2. FORMACIÓN -->
+  <div class="card section" id="sec-1">
+    <p class="section-title">Formación académica</p>
+    <div id="formacion-list"></div>
+    <button class="add-btn" onclick="addFormacion()">+ Agregar título académico</button>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(0)">← Anterior</button>
+      <button class="btn-next" onclick="goTo(2)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- 3. LABORAL -->
+  <div class="card section" id="sec-2">
+    <p class="section-title">Experiencia laboral</p>
+    <div id="laboral-list"></div>
+    <button class="add-btn" onclick="addLaboral()">+ Agregar experiencia laboral</button>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(1)">← Anterior</button>
+      <button class="btn-next" onclick="goTo(3)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- 4. DOCENCIA -->
+  <div class="card section" id="sec-3">
+    <p class="section-title">Experiencia docente y cursos</p>
+    <div id="docente-list"></div>
+    <button class="add-btn" onclick="addDocente()">+ Agregar experiencia docente</button>
+    <div class="sep"></div>
+    <p class="subsection-title">Cursos y capacitaciones dictados</p>
+    <div id="cursos-list"></div>
+    <button class="add-btn" onclick="addCurso()">+ Agregar curso</button>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(2)">← Anterior</button>
+      <button class="btn-next" onclick="goTo(4)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- 5. LOGROS -->
+  <div class="card section" id="sec-4">
+    <p class="section-title">Logros, premios y publicaciones</p>
+    <div id="premios-list"></div>
+    <button class="add-btn" onclick="addPremio()">+ Agregar premio o reconocimiento</button>
+    <div class="sep"></div>
+    <p class="subsection-title">Publicaciones e investigaciones</p>
+    <div id="publicaciones-list"></div>
+    <button class="add-btn" onclick="addPublicacion()">+ Agregar publicación</button>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(3)">← Anterior</button>
+      <button class="btn-next" onclick="goTo(5)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- 6. ARCHIVOS -->
+  <div class="card section" id="sec-5">
+    <p class="section-title">Documentos adjuntos (PDF)</p>
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto; display: block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <p>Haga clic o arrastre archivos PDF aquí</p>
+      <small>Certificados, títulos, soportes académicos · Máx. 10 MB por archivo</small>
+    </div>
+    <input type="file" id="file-input" multiple accept=".pdf" style="display:none" onchange="handleFiles(this.files)">
+    <div class="file-list" id="file-list"></div>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(4)">← Anterior</button>
+      <button class="btn-next" onclick="goTo(6)">Ver resumen →</button>
+    </div>
+  </div>
+
+  <!-- 7. RESUMEN -->
+  <div class="card section" id="sec-6">
+    <p class="section-title">Resumen de su hoja de vida</p>
+    <div id="summary-content"></div>
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(5)">← Anterior</button>
+      <button class="btn-download" id="dl-btn" onclick="downloadDocx()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Descargar hoja de vida (.docx)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 0;
+let uploadedFiles = [];
+let counters = { f: 0, l: 0, d: 0, c: 0, p: 0, pb: 0 };
+
+function goTo(step) {
+  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', i === step));
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.remove('active','done');
+    if (i === step) t.classList.add('active');
+    else if (i < step) t.classList.add('done');
+  });
+  currentStep = step;
+  if (step === 6) buildSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function card(id, html) {
+  return `<div class="entry-card" id="card-${id}">
+    <button class="remove-btn" onclick="document.getElementById('card-${id}').remove()">✕ Quitar</button>
+    ${html}
+  </div>`;
+}
+
+function addFormacion() {
+  const id = 'f' + counters.f++;
+  document.getElementById('formacion-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="grid-2">
+      <div class="field-group"><label>Nivel académico</label>
+        <select id="${id}_nivel"><option>Técnico</option><option>Tecnólogo</option><option>Pregrado / Licenciatura</option><option>Especialización</option><option>Maestría</option><option>Doctorado</option><option>Postdoctorado</option></select></div>
+      <div class="field-group"><label>Título obtenido</label><input type="text" id="${id}_titulo" placeholder="Ej. Ingeniero de Sistemas"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Institución</label><input type="text" id="${id}_inst" placeholder="Nombre de la universidad"></div>
+      <div class="field-group"><label>País</label><input type="text" id="${id}_pais" placeholder="Ej. Colombia"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Fecha de inicio</label><input type="month" id="${id}_inicio"></div>
+      <div class="field-group"><label>Fecha de grado / finalización</label><input type="month" id="${id}_fin"></div>
+    </div>`));
+}
+
+function addLaboral() {
+  const id = 'l' + counters.l++;
+  document.getElementById('laboral-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="grid-2">
+      <div class="field-group"><label>Cargo / Posición</label><input type="text" id="${id}_cargo" placeholder="Ej. Gerente de Proyectos"></div>
+      <div class="field-group"><label>Empresa / Organización</label><input type="text" id="${id}_empresa" placeholder="Nombre de la empresa"></div>
+    </div>
+    <div class="grid-3">
+      <div class="field-group"><label>Sector</label><input type="text" id="${id}_sector" placeholder="Ej. Tecnología"></div>
+      <div class="field-group"><label>Fecha de inicio</label><input type="month" id="${id}_inicio"></div>
+      <div class="field-group"><label>Fecha de cierre</label><input type="month" id="${id}_fin"></div>
+    </div>
+    <div class="field-group"><label class="check-label"><input type="checkbox" id="${id}_actual" onchange="document.getElementById('${id}_fin').disabled=this.checked"> Trabajo actual</label></div>
+    <div class="field-group"><label>Descripción de funciones</label><textarea id="${id}_desc" placeholder="Describa sus principales responsabilidades y logros..."></textarea></div>`));
+}
+
+function addDocente() {
+  const id = 'd' + counters.d++;
+  document.getElementById('docente-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="grid-2">
+      <div class="field-group"><label>Institución educativa</label><input type="text" id="${id}_inst" placeholder="Nombre de la institución"></div>
+      <div class="field-group"><label>Modalidad</label>
+        <select id="${id}_modal"><option>Presencial</option><option>Virtual / Online</option><option>Híbrida</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Nivel educativo</label>
+        <select id="${id}_nivel"><option>Educación básica</option><option>Educación media</option><option>Pregrado</option><option>Posgrado</option><option>Educación continua</option><option>Formación corporativa</option></select></div>
+      <div class="field-group"><label>Área / Asignatura principal</label><input type="text" id="${id}_area" placeholder="Ej. Matemáticas, Programación..."></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Fecha de inicio</label><input type="month" id="${id}_inicio"></div>
+      <div class="field-group"><label>Fecha de cierre</label><input type="month" id="${id}_fin"></div>
+    </div>
+    <div class="field-group"><label class="check-label"><input type="checkbox" id="${id}_actual" onchange="document.getElementById('${id}_fin').disabled=this.checked"> Actividad actual</label></div>`));
+}
+
+function addCurso() {
+  const id = 'c' + counters.c++;
+  document.getElementById('cursos-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="grid-2">
+      <div class="field-group"><label>Nombre del curso / módulo</label><input type="text" id="${id}_nombre" placeholder="Ej. Introducción a la IA"></div>
+      <div class="field-group"><label>Institución / Plataforma</label><input type="text" id="${id}_inst" placeholder="Ej. Coursera, Universidad Nacional..."></div>
+    </div>
+    <div class="grid-3">
+      <div class="field-group"><label>Horas</label><input type="number" id="${id}_horas" placeholder="Ej. 40" min="1"></div>
+      <div class="field-group"><label>Fecha de inicio</label><input type="month" id="${id}_inicio"></div>
+      <div class="field-group"><label>Fecha de cierre</label><input type="month" id="${id}_fin"></div>
+    </div>`));
+}
+
+function addPremio() {
+  const id = 'p' + counters.p++;
+  document.getElementById('premios-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="grid-2">
+      <div class="field-group"><label>Nombre del premio / reconocimiento</label><input type="text" id="${id}_nombre" placeholder="Ej. Docente del Año"></div>
+      <div class="field-group"><label>Otorgado por</label><input type="text" id="${id}_otorga" placeholder="Institución u organización"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Año</label><input type="number" id="${id}_anio" placeholder="Ej. 2022" min="1950" max="2099"></div>
+      <div class="field-group"><label>Tipo</label>
+        <select id="${id}_tipo"><option>Premio académico</option><option>Reconocimiento institucional</option><option>Distinción honorífica</option><option>Beca</option><option>Otro</option></select></div>
+    </div>
+    <div class="field-group"><label>Descripción (opcional)</label><input type="text" id="${id}_desc" placeholder="Breve descripción del mérito..."></div>`));
+}
+
+function addPublicacion() {
+  const id = 'pb' + counters.pb++;
+  document.getElementById('publicaciones-list').insertAdjacentHTML('beforeend', card(id, `
+    <div class="field-group"><label>Título de la publicación</label><input type="text" id="${id}_titulo" placeholder="Título del artículo, libro o capítulo"></div>
+    <div class="grid-2">
+      <div class="field-group"><label>Tipo</label>
+        <select id="${id}_tipo"><option>Artículo científico</option><option>Libro</option><option>Capítulo de libro</option><option>Ponencia</option><option>Informe técnico</option><option>Otro</option></select></div>
+      <div class="field-group"><label>Año de publicación</label><input type="number" id="${id}_anio" placeholder="Ej. 2021" min="1950" max="2099"></div>
+    </div>
+    <div class="grid-2">
+      <div class="field-group"><label>Revista / Editorial / Evento</label><input type="text" id="${id}_revista" placeholder="Nombre de la publicación"></div>
+      <div class="field-group"><label>DOI / URL (opcional)</label><input type="text" id="${id}_doi" placeholder="https://..."></div>
+    </div>`));
+}
+
+function handleFiles(files) {
+  Array.from(files).forEach(f => {
+    if (!f.name.toLowerCase().endsWith('.pdf')) { alert('Solo se permiten archivos PDF'); return; }
+    if (f.size > 10 * 1024 * 1024) { alert('El archivo ' + f.name + ' supera 10 MB'); return; }
+    if (uploadedFiles.find(u => u.name === f.name)) return;
+    uploadedFiles.push(f);
+    renderFiles();
+  });
+}
+
+function renderFiles() {
+  document.getElementById('file-list').innerHTML = uploadedFiles.map((f,i) => `
+    <div class="file-item">
+      <div><div class="fn">📄 ${f.name}</div><div class="fs">${(f.size/1024).toFixed(0)} KB</div></div>
+      <button onclick="uploadedFiles.splice(${i},1);renderFiles()">✕</button>
+    </div>`).join('');
+}
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.background='#e8f0fb'; });
+dz.addEventListener('dragleave', () => dz.style.background='');
+dz.addEventListener('drop', e => { e.preventDefault(); dz.style.background=''; handleFiles(e.dataTransfer.files); });
+
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function cards(listId) { return Array.from(document.getElementById(listId).querySelectorAll('.entry-card')); }
+
+function buildSummary() {
+  const nombre = (v('nombres') + ' ' + v('apellidos')).trim();
+  let html = `<div class="summary-section"><h3>Datos personales</h3><table class="summary-table">
+    <tr><td>Nombre</td><td>${nombre||'—'}</td></tr>
+    <tr><td>Documento</td><td>${v('tipo_doc')} ${v('num_doc')||'—'}</td></tr>
+    <tr><td>Correo</td><td>${v('email')||'—'}</td></tr>
+    <tr><td>Teléfono</td><td>${v('telefono')||'—'}</td></tr>
+    <tr><td>Ciudad</td><td>${v('ciudad')||'—'}</td></tr>
+    ${v('linkedin')?`<tr><td>LinkedIn</td><td><a href="${v('linkedin')}" target="_blank" style="color:#185FA5">${v('linkedin')}</a></td></tr>`:''}
+  </table></div>`;
+
+  const fc = cards('formacion-list');
+  if(fc.length) {
+    html += `<div class="summary-section"><h3>Formación académica<span class="badge">${fc.length}</span></h3><table class="summary-table">`;
+    fc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_nivel')}</td><td>${v(id+'_titulo')||'—'} — ${v(id+'_inst')||'—'}</td></tr>`; });
+    html += '</table></div>';
+  }
+
+  const lc = cards('laboral-list');
+  if(lc.length) {
+    html += `<div class="summary-section"><h3>Experiencia laboral<span class="badge">${lc.length}</span></h3><table class="summary-table">`;
+    lc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_cargo')||'—'}</td><td>${v(id+'_empresa')||'—'}</td></tr>`; });
+    html += '</table></div>';
+  }
+
+  const dc = cards('docente-list'), cc = cards('cursos-list');
+  if(dc.length||cc.length) {
+    html += `<div class="summary-section"><h3>Experiencia docente<span class="badge">${dc.length+cc.length}</span></h3><table class="summary-table">`;
+    dc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_area')||'Docencia'}</td><td>${v(id+'_inst')||'—'}</td></tr>`; });
+    cc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>Curso: ${v(id+'_nombre')||'—'}</td><td>${v(id+'_inst')||'—'}</td></tr>`; });
+    html += '</table></div>';
+  }
+
+  if(uploadedFiles.length) {
+    html += `<div class="summary-section"><h3>Archivos adjuntos<span class="badge">${uploadedFiles.length}</span></h3><table class="summary-table">`;
+    uploadedFiles.forEach(f => { html+=`<tr><td colspan="2">📄 ${f.name}</td></tr>`; });
+    html += '</table></div>';
+  }
+
+  document.getElementById('summary-content').innerHTML = html;
+}
+
+async function downloadDocx() {
+  const btn = document.getElementById('dl-btn');
+  btn.disabled = true; btn.textContent = 'Generando documento...';
+  try {
+    const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, AlignmentType, BorderStyle } = docx;
+
+    function h1(text) {
+      return new Paragraph({
+        children: [new TextRun({ text, bold: true, size: 36, color: '185FA5', font: 'Arial' })],
+        spacing: { before: 480, after: 100 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: '185FA5', space: 4 } }
+      });
+    }
+    function h2(text) {
+      return new Paragraph({
+        children: [new TextRun({ text, bold: true, size: 26, color: '333333', font: 'Arial' })],
+        spacing: { before: 260, after: 80 }
+      });
+    }
+    function field(label, value) {
+      if (!value) return null;
+      return new Paragraph({
+        children: [new TextRun({ text: label + ': ', bold: true, size: 20, font: 'Arial', color: '5F5E5A' }),
+                   new TextRun({ text: value, size: 20, font: 'Arial' })],
+        spacing: { after: 60 }
+      });
+    }
+    function linkField(label, url) {
+      if (!url) return null;
+      return new Paragraph({
+        children: [new TextRun({ text: label + ': ', bold: true, size: 20, font: 'Arial', color: '5F5E5A' }),
+                   new ExternalHyperlink({ link: url, children: [new TextRun({ text: url, size: 20, font: 'Arial', color: '185FA5', underline: {} })] })],
+        spacing: { after: 60 }
+      });
+    }
+    function divider() {
+      return new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: 'DDDDDD', space: 1 } }, spacing: { after: 160 } });
+    }
+    function sp() { return new Paragraph({ spacing: { after: 100 } }); }
+
+    const children = [];
+    const nombre = (v('nombres') + ' ' + v('apellidos')).trim() || 'Docente';
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: nombre, bold: true, size: 56, font: 'Arial', color: '185FA5' })],
+      alignment: AlignmentType.CENTER, spacing: { after: 60 }
+    }));
+
+    const contacto = [v('email'), v('telefono'), v('ciudad')].filter(Boolean).join('  |  ');
+    if (contacto) children.push(new Paragraph({
+      children: [new TextRun({ text: contacto, size: 20, font: 'Arial', color: '888780' })],
+      alignment: AlignmentType.CENTER, spacing: { after: 40 }
+    }));
+
+    if (v('linkedin')) children.push(new Paragraph({
+      children: [new ExternalHyperlink({ link: v('linkedin'), children: [new TextRun({ text: v('linkedin'), size: 18, font: 'Arial', color: '0A66C2', underline: {} })] })],
+      alignment: AlignmentType.CENTER, spacing: { after: 100 }
+    }));
+
+    children.push(divider());
+    children.push(h1('Información personal'));
+    [['Tipo de documento', v('tipo_doc')], ['Número de documento', v('num_doc')],
+     ['Fecha de nacimiento', v('fecha_nac')], ['Nacionalidad', v('nacionalidad')],
+     ['Ciudad de residencia', v('ciudad')]].forEach(([l,val]) => { const p=field(l,val); if(p) children.push(p); });
+    const li = linkField('LinkedIn', v('linkedin')); if(li) children.push(li);
+
+    if (v('perfil')) {
+      children.push(new Paragraph({ children: [new TextRun({ text: 'Perfil profesional', bold: true, size: 20, font: 'Arial', color: '5F5E5A' })], spacing: { before: 120, after: 40 } }));
+      children.push(new Paragraph({ children: [new TextRun({ text: v('perfil'), size: 20, font: 'Arial', italics: true })], spacing: { after: 100 } }));
+    }
+
+    const fc = cards('formacion-list');
+    if(fc.length) {
+      children.push(h1('Formación académica'));
+      fc.forEach(c => {
+        const id = c.id.replace('card-','');
+        children.push(h2((v(id+'_nivel')||'Título') + ' — ' + (v(id+'_titulo')||'')));
+        [field('Institución', v(id+'_inst')), field('País', v(id+'_pais'))].forEach(p => { if(p) children.push(p); });
+        const per = [v(id+'_inicio'), v(id+'_fin')].filter(Boolean).join(' – ');
+        if(per) children.push(field('Período', per));
+        children.push(sp());
+      });
+    }
+
+    const lc = cards('laboral-list');
+    if(lc.length) {
+      children.push(h1('Experiencia laboral'));
+      lc.forEach(c => {
+        const id = c.id.replace('card-','');
+        const actual = document.getElementById(id+'_actual')?.checked;
+        children.push(h2((v(id+'_cargo')||'Cargo') + ' — ' + (v(id+'_empresa')||'')));
+        if(v(id+'_sector')) children.push(field('Sector', v(id+'_sector')));
+        const per = [v(id+'_inicio'), actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
+        if(per) children.push(field('Período', per));
+        if(v(id+'_desc')) children.push(new Paragraph({ children: [new TextRun({ text: v(id+'_desc'), size: 20, font: 'Arial' })], spacing: { before: 60, after: 80 } }));
+        children.push(sp());
+      });
+    }
+
+    const dc = cards('docente-list');
+    if(dc.length) {
+      children.push(h1('Experiencia docente'));
+      dc.forEach(c => {
+        const id = c.id.replace('card-','');
+        const actual = document.getElementById(id+'_actual')?.checked;
+        children.push(h2((v(id+'_area')||'Área') + ' — ' + (v(id+'_inst')||'')));
+        [field('Modalidad', v(id+'_modal')), field('Nivel educativo', v(id+'_nivel'))].forEach(p => { if(p) children.push(p); });
+        const per = [v(id+'_inicio'), actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
+        if(per) children.push(field('Período', per));
+        children.push(sp());
+      });
+    }
+
+    const cc = cards('cursos-list');
+    if(cc.length) {
+      children.push(h1('Cursos dictados'));
+      cc.forEach(c => {
+        const id = c.id.replace('card-','');
+        children.push(h2(v(id+'_nombre')||'Curso'));
+        if(v(id+'_inst')) children.push(field('Institución / Plataforma', v(id+'_inst')));
+        if(v(id+'_horas')) children.push(field('Intensidad horaria', v(id+'_horas') + ' horas'));
+        const per = [v(id+'_inicio'), v(id+'_fin')].filter(Boolean).join(' – ');
+        if(per) children.push(field('Período', per));
+        children.push(sp());
+      });
+    }
+
+    const pc = cards('premios-list');
+    if(pc.length) {
+      children.push(h1('Premios y reconocimientos'));
+      pc.forEach(c => {
+        const id = c.id.replace('card-','');
+        children.push(h2(v(id+'_nombre')||'Premio'));
+        [field('Otorgado por', v(id+'_otorga')), field('Año', v(id+'_anio')),
+         field('Tipo', v(id+'_tipo')), field('Descripción', v(id+'_desc'))].forEach(p => { if(p) children.push(p); });
+        children.push(sp());
+      });
+    }
+
+    const pbc = cards('publicaciones-list');
+    if(pbc.length) {
+      children.push(h1('Publicaciones e investigaciones'));
+      pbc.forEach(c => {
+        const id = c.id.replace('card-','');
+        children.push(h2(v(id+'_titulo')||'Publicación'));
+        [field('Tipo', v(id+'_tipo')), field('Año', v(id+'_anio')),
+         field('Publicado en', v(id+'_revista')), field('DOI / URL', v(id+'_doi'))].forEach(p => { if(p) children.push(p); });
+        children.push(sp());
+      });
+    }
+
+    if(uploadedFiles.length) {
+      children.push(h1('Documentos adjuntos'));
+      children.push(new Paragraph({ children: [new TextRun({ text: 'Los siguientes documentos se entregan junto con esta hoja de vida:', size: 20, font: 'Arial', italics: true })], spacing: { after: 120 } }));
+      uploadedFiles.forEach((f,i) => {
+        children.push(new Paragraph({ children: [new TextRun({ text: `${i+1}. ${f.name}`, size: 20, font: 'Arial' })], spacing: { after: 60 } }));
+      });
+    }
+
+    children.push(divider());
+    const hoy = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `Hoja de vida generada el ${hoy}`, size: 18, font: 'Arial', color: '888780', italics: true })],
+      alignment: AlignmentType.RIGHT, spacing: { before: 120 }
+    }));
+
+    const doc = new Document({
+      sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }]
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `HojaVida_${nombre.replace(/\s+/g,'_')}.docx`; a.click();
+    URL.revokeObjectURL(url);
+
+    btn.textContent = '✓ Descargado'; btn.style.background = '#2e7d32';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Descargar hoja de vida (.docx)'; btn.style.background = ''; }, 3000);
+  } catch(e) {
+    alert('Error: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Descargar hoja de vida (.docx)';
+  }
+}
+
+addFormacion(); addLaboral(); addDocente();
+</script>
+</body>
+</html>
