@@ -57,7 +57,6 @@
     .btn-download:disabled { background: #ccc; cursor: not-allowed; }
     .upload-zone { border: 2px dashed #c5d5e8; border-radius: 10px; padding: 2.5rem; text-align: center; cursor: pointer; background: #f8f9fb; transition: all 0.15s; }
     .upload-zone:hover { background: #e8f0fb; border-color: #185FA5; }
-    .upload-zone svg { color: #aaa; }
     .upload-zone p { font-size: 14px; color: #666; margin-top: 8px; }
     .upload-zone small { font-size: 12px; color: #aaa; }
     .file-list { margin-top: 1rem; }
@@ -74,6 +73,12 @@
     .badge { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11px; background: #e8f0fb; color: #185FA5; margin-left: 6px; font-weight: 600; }
     .check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; cursor: pointer; }
     .check-label input[type=checkbox] { width: auto; accent-color: #185FA5; }
+    .status-bar { margin-top: 1rem; padding: 10px 14px; border-radius: 8px; font-size: 13px; display: none; }
+    .status-bar.sending { background: #e8f0fb; color: #185FA5; display: flex; align-items: center; gap: 8px; }
+    .status-bar.ok { background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; gap: 8px; }
+    .status-bar.error { background: #ffebee; color: #c62828; display: flex; align-items: center; gap: 8px; }
+    .spinner { width: 14px; height: 14px; border: 2px solid #185FA5; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -186,7 +191,7 @@
   <div class="card section" id="sec-5">
     <p class="section-title">Documentos adjuntos (PDF)</p>
     <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto; display: block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto;display:block;color:#aaa"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
       <p>Haga clic o arrastre archivos PDF aquí</p>
       <small>Certificados, títulos, soportes académicos · Máx. 10 MB por archivo</small>
     </div>
@@ -202,31 +207,34 @@
   <div class="card section" id="sec-6">
     <p class="section-title">Resumen de su hoja de vida</p>
     <div id="summary-content"></div>
+    <div id="status-bar" class="status-bar"></div>
     <div class="nav-btns">
       <button class="btn-prev" onclick="goTo(5)">← Anterior</button>
-      <button class="btn-download" id="dl-btn" onclick="downloadDocx()">
+      <button class="btn-download" id="dl-btn" onclick="descargarYRegistrar()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Descargar hoja de vida (.docx)
+        Descargar y registrar hoja de vida
       </button>
     </div>
   </div>
 </div>
 
 <script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxVeYRezOQIv8PykbfgTMsee5Wqy0ABaltGErlnhJBySDyCfXYBkY3HlucNl9MuQI-DdQ/exec';
+
 let currentStep = 0;
 let uploadedFiles = [];
-let counters = { f: 0, l: 0, d: 0, c: 0, p: 0, pb: 0 };
+let counters = { f:0, l:0, d:0, c:0, p:0, pb:0 };
 
 function goTo(step) {
-  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', i === step));
+  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', i===step));
   document.querySelectorAll('.step-tab').forEach((t,i) => {
     t.classList.remove('active','done');
-    if (i === step) t.classList.add('active');
-    else if (i < step) t.classList.add('done');
+    if(i===step) t.classList.add('active');
+    else if(i<step) t.classList.add('done');
   });
   currentStep = step;
-  if (step === 6) buildSummary();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if(step===6) buildSummary();
+  window.scrollTo({ top:0, behavior:'smooth' });
 }
 
 function card(id, html) {
@@ -237,8 +245,8 @@ function card(id, html) {
 }
 
 function addFormacion() {
-  const id = 'f' + counters.f++;
-  document.getElementById('formacion-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='f'+counters.f++;
+  document.getElementById('formacion-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="grid-2">
       <div class="field-group"><label>Nivel académico</label>
         <select id="${id}_nivel"><option>Técnico</option><option>Tecnólogo</option><option>Pregrado / Licenciatura</option><option>Especialización</option><option>Maestría</option><option>Doctorado</option><option>Postdoctorado</option></select></div>
@@ -255,8 +263,8 @@ function addFormacion() {
 }
 
 function addLaboral() {
-  const id = 'l' + counters.l++;
-  document.getElementById('laboral-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='l'+counters.l++;
+  document.getElementById('laboral-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="grid-2">
       <div class="field-group"><label>Cargo / Posición</label><input type="text" id="${id}_cargo" placeholder="Ej. Gerente de Proyectos"></div>
       <div class="field-group"><label>Empresa / Organización</label><input type="text" id="${id}_empresa" placeholder="Nombre de la empresa"></div>
@@ -271,8 +279,8 @@ function addLaboral() {
 }
 
 function addDocente() {
-  const id = 'd' + counters.d++;
-  document.getElementById('docente-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='d'+counters.d++;
+  document.getElementById('docente-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="grid-2">
       <div class="field-group"><label>Institución educativa</label><input type="text" id="${id}_inst" placeholder="Nombre de la institución"></div>
       <div class="field-group"><label>Modalidad</label>
@@ -291,8 +299,8 @@ function addDocente() {
 }
 
 function addCurso() {
-  const id = 'c' + counters.c++;
-  document.getElementById('cursos-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='c'+counters.c++;
+  document.getElementById('cursos-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="grid-2">
       <div class="field-group"><label>Nombre del curso / módulo</label><input type="text" id="${id}_nombre" placeholder="Ej. Introducción a la IA"></div>
       <div class="field-group"><label>Institución / Plataforma</label><input type="text" id="${id}_inst" placeholder="Ej. Coursera, Universidad Nacional..."></div>
@@ -305,8 +313,8 @@ function addCurso() {
 }
 
 function addPremio() {
-  const id = 'p' + counters.p++;
-  document.getElementById('premios-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='p'+counters.p++;
+  document.getElementById('premios-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="grid-2">
       <div class="field-group"><label>Nombre del premio / reconocimiento</label><input type="text" id="${id}_nombre" placeholder="Ej. Docente del Año"></div>
       <div class="field-group"><label>Otorgado por</label><input type="text" id="${id}_otorga" placeholder="Institución u organización"></div>
@@ -320,8 +328,8 @@ function addPremio() {
 }
 
 function addPublicacion() {
-  const id = 'pb' + counters.pb++;
-  document.getElementById('publicaciones-list').insertAdjacentHTML('beforeend', card(id, `
+  const id='pb'+counters.pb++;
+  document.getElementById('publicaciones-list').insertAdjacentHTML('beforeend', card(id,`
     <div class="field-group"><label>Título de la publicación</label><input type="text" id="${id}_titulo" placeholder="Título del artículo, libro o capítulo"></div>
     <div class="grid-2">
       <div class="field-group"><label>Tipo</label>
@@ -336,16 +344,16 @@ function addPublicacion() {
 
 function handleFiles(files) {
   Array.from(files).forEach(f => {
-    if (!f.name.toLowerCase().endsWith('.pdf')) { alert('Solo se permiten archivos PDF'); return; }
-    if (f.size > 10 * 1024 * 1024) { alert('El archivo ' + f.name + ' supera 10 MB'); return; }
-    if (uploadedFiles.find(u => u.name === f.name)) return;
+    if(!f.name.toLowerCase().endsWith('.pdf')) { alert('Solo se permiten archivos PDF'); return; }
+    if(f.size > 10*1024*1024) { alert('El archivo '+f.name+' supera 10 MB'); return; }
+    if(uploadedFiles.find(u=>u.name===f.name)) return;
     uploadedFiles.push(f);
     renderFiles();
   });
 }
 
 function renderFiles() {
-  document.getElementById('file-list').innerHTML = uploadedFiles.map((f,i) => `
+  document.getElementById('file-list').innerHTML = uploadedFiles.map((f,i)=>`
     <div class="file-item">
       <div><div class="fn">📄 ${f.name}</div><div class="fs">${(f.size/1024).toFixed(0)} KB</div></div>
       <button onclick="uploadedFiles.splice(${i},1);renderFiles()">✕</button>
@@ -353,15 +361,82 @@ function renderFiles() {
 }
 
 const dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.background='#e8f0fb'; });
-dz.addEventListener('dragleave', () => dz.style.background='');
-dz.addEventListener('drop', e => { e.preventDefault(); dz.style.background=''; handleFiles(e.dataTransfer.files); });
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.style.background='#e8f0fb'; });
+dz.addEventListener('dragleave', ()=>dz.style.background='');
+dz.addEventListener('drop', e=>{ e.preventDefault(); dz.style.background=''; handleFiles(e.dataTransfer.files); });
 
-function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function v(id) { const el=document.getElementById(id); return el ? el.value.trim() : ''; }
 function cards(listId) { return Array.from(document.getElementById(listId).querySelectorAll('.entry-card')); }
 
+function recopilarDatos() {
+  const fc = cards('formacion-list').map(c => {
+    const id=c.id.replace('card-','');
+    return `${v(id+'_nivel')}: ${v(id+'_titulo')} | ${v(id+'_inst')}, ${v(id+'_pais')} (${v(id+'_inicio')} – ${v(id+'_fin')})`;
+  }).join(' / ');
+
+  const lc = cards('laboral-list').map(c => {
+    const id=c.id.replace('card-','');
+    const actual=document.getElementById(id+'_actual')?.checked;
+    return `${v(id+'_cargo')} en ${v(id+'_empresa')} [${v(id+'_sector')}] (${v(id+'_inicio')} – ${actual?'Actual':v(id+'_fin')})`;
+  }).join(' / ');
+
+  const dc = cards('docente-list').map(c => {
+    const id=c.id.replace('card-','');
+    const actual=document.getElementById(id+'_actual')?.checked;
+    return `${v(id+'_area')} | ${v(id+'_inst')} | ${v(id+'_modal')} | ${v(id+'_nivel')} (${v(id+'_inicio')} – ${actual?'Actual':v(id+'_fin')})`;
+  }).join(' / ');
+
+  const cc = cards('cursos-list').map(c => {
+    const id=c.id.replace('card-','');
+    return `${v(id+'_nombre')} | ${v(id+'_inst')} | ${v(id+'_horas')}h (${v(id+'_inicio')} – ${v(id+'_fin')})`;
+  }).join(' / ');
+
+  const pc = cards('premios-list').map(c => {
+    const id=c.id.replace('card-','');
+    return `${v(id+'_nombre')} | ${v(id+'_otorga')} | ${v(id+'_anio')} | ${v(id+'_tipo')}`;
+  }).join(' / ');
+
+  const pbc = cards('publicaciones-list').map(c => {
+    const id=c.id.replace('card-','');
+    return `${v(id+'_titulo')} | ${v(id+'_tipo')} | ${v(id+'_anio')} | ${v(id+'_revista')}`;
+  }).join(' / ');
+
+  const archivos = uploadedFiles.map(f=>f.name).join(', ');
+
+  return {
+    nombres: v('nombres'), apellidos: v('apellidos'),
+    tipo_doc: v('tipo_doc'), num_doc: v('num_doc'),
+    fecha_nac: v('fecha_nac'), nacionalidad: v('nacionalidad'),
+    ciudad: v('ciudad'), email: v('email'),
+    telefono: v('telefono'), linkedin: v('linkedin'),
+    perfil: v('perfil'), formacion: fc,
+    laboral: lc, docente: dc,
+    cursos: cc, premios: pc,
+    publicaciones: pbc, archivos: archivos
+  };
+}
+
+function setStatus(tipo, mensaje) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + tipo;
+  if(tipo === 'sending') {
+    bar.innerHTML = `<div class="spinner"></div> ${mensaje}`;
+  } else {
+    bar.innerHTML = mensaje;
+  }
+}
+
+async function enviarASheets(datos) {
+  const resp = await fetch(SHEETS_URL, {
+    method: 'POST',
+    body: JSON.stringify(datos)
+  });
+  const json = await resp.json();
+  if(json.resultado !== 'ok') throw new Error(json.mensaje || 'Error desconocido');
+}
+
 function buildSummary() {
-  const nombre = (v('nombres') + ' ' + v('apellidos')).trim();
+  const nombre = (v('nombres')+' '+v('apellidos')).trim();
   let html = `<div class="summary-section"><h3>Datos personales</h3><table class="summary-table">
     <tr><td>Nombre</td><td>${nombre||'—'}</td></tr>
     <tr><td>Documento</td><td>${v('tipo_doc')} ${v('num_doc')||'—'}</td></tr>
@@ -371,219 +446,218 @@ function buildSummary() {
     ${v('linkedin')?`<tr><td>LinkedIn</td><td><a href="${v('linkedin')}" target="_blank" style="color:#185FA5">${v('linkedin')}</a></td></tr>`:''}
   </table></div>`;
 
-  const fc = cards('formacion-list');
+  const fc=cards('formacion-list');
   if(fc.length) {
-    html += `<div class="summary-section"><h3>Formación académica<span class="badge">${fc.length}</span></h3><table class="summary-table">`;
-    fc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_nivel')}</td><td>${v(id+'_titulo')||'—'} — ${v(id+'_inst')||'—'}</td></tr>`; });
-    html += '</table></div>';
+    html+=`<div class="summary-section"><h3>Formación académica<span class="badge">${fc.length}</span></h3><table class="summary-table">`;
+    fc.forEach(c=>{const id=c.id.replace('card-','');html+=`<tr><td>${v(id+'_nivel')}</td><td>${v(id+'_titulo')||'—'} — ${v(id+'_inst')||'—'}</td></tr>`;});
+    html+='</table></div>';
   }
-
-  const lc = cards('laboral-list');
+  const lc=cards('laboral-list');
   if(lc.length) {
-    html += `<div class="summary-section"><h3>Experiencia laboral<span class="badge">${lc.length}</span></h3><table class="summary-table">`;
-    lc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_cargo')||'—'}</td><td>${v(id+'_empresa')||'—'}</td></tr>`; });
-    html += '</table></div>';
+    html+=`<div class="summary-section"><h3>Experiencia laboral<span class="badge">${lc.length}</span></h3><table class="summary-table">`;
+    lc.forEach(c=>{const id=c.id.replace('card-','');html+=`<tr><td>${v(id+'_cargo')||'—'}</td><td>${v(id+'_empresa')||'—'}</td></tr>`;});
+    html+='</table></div>';
   }
-
-  const dc = cards('docente-list'), cc = cards('cursos-list');
+  const dc=cards('docente-list'),cc=cards('cursos-list');
   if(dc.length||cc.length) {
-    html += `<div class="summary-section"><h3>Experiencia docente<span class="badge">${dc.length+cc.length}</span></h3><table class="summary-table">`;
-    dc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>${v(id+'_area')||'Docencia'}</td><td>${v(id+'_inst')||'—'}</td></tr>`; });
-    cc.forEach(c => { const id=c.id.replace('card-',''); html+=`<tr><td>Curso: ${v(id+'_nombre')||'—'}</td><td>${v(id+'_inst')||'—'}</td></tr>`; });
-    html += '</table></div>';
+    html+=`<div class="summary-section"><h3>Experiencia docente<span class="badge">${dc.length+cc.length}</span></h3><table class="summary-table">`;
+    dc.forEach(c=>{const id=c.id.replace('card-','');html+=`<tr><td>${v(id+'_area')||'Docencia'}</td><td>${v(id+'_inst')||'—'}</td></tr>`;});
+    cc.forEach(c=>{const id=c.id.replace('card-','');html+=`<tr><td>Curso: ${v(id+'_nombre')||'—'}</td><td>${v(id+'_inst')||'—'}</td></tr>`;});
+    html+='</table></div>';
   }
-
   if(uploadedFiles.length) {
-    html += `<div class="summary-section"><h3>Archivos adjuntos<span class="badge">${uploadedFiles.length}</span></h3><table class="summary-table">`;
-    uploadedFiles.forEach(f => { html+=`<tr><td colspan="2">📄 ${f.name}</td></tr>`; });
-    html += '</table></div>';
+    html+=`<div class="summary-section"><h3>Archivos adjuntos<span class="badge">${uploadedFiles.length}</span></h3><table class="summary-table">`;
+    uploadedFiles.forEach(f=>{html+=`<tr><td colspan="2">📄 ${f.name}</td></tr>`;});
+    html+='</table></div>';
   }
-
   document.getElementById('summary-content').innerHTML = html;
 }
 
-async function downloadDocx() {
+async function descargarYRegistrar() {
   const btn = document.getElementById('dl-btn');
-  btn.disabled = true; btn.textContent = 'Generando documento...';
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+
   try {
-    const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, AlignmentType, BorderStyle } = docx;
+    // 1. Generar y descargar el Word
+    await generarDocx();
 
-    function h1(text) {
-      return new Paragraph({
-        children: [new TextRun({ text, bold: true, size: 36, color: '185FA5', font: 'Arial' })],
-        spacing: { before: 480, after: 100 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: '185FA5', space: 4 } }
-      });
-    }
-    function h2(text) {
-      return new Paragraph({
-        children: [new TextRun({ text, bold: true, size: 26, color: '333333', font: 'Arial' })],
-        spacing: { before: 260, after: 80 }
-      });
-    }
-    function field(label, value) {
-      if (!value) return null;
-      return new Paragraph({
-        children: [new TextRun({ text: label + ': ', bold: true, size: 20, font: 'Arial', color: '5F5E5A' }),
-                   new TextRun({ text: value, size: 20, font: 'Arial' })],
-        spacing: { after: 60 }
-      });
-    }
-    function linkField(label, url) {
-      if (!url) return null;
-      return new Paragraph({
-        children: [new TextRun({ text: label + ': ', bold: true, size: 20, font: 'Arial', color: '5F5E5A' }),
-                   new ExternalHyperlink({ link: url, children: [new TextRun({ text: url, size: 20, font: 'Arial', color: '185FA5', underline: {} })] })],
-        spacing: { after: 60 }
-      });
-    }
-    function divider() {
-      return new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: 'DDDDDD', space: 1 } }, spacing: { after: 160 } });
-    }
-    function sp() { return new Paragraph({ spacing: { after: 100 } }); }
+    // 2. Enviar datos a Google Sheets
+    setStatus('sending', 'Registrando en la base de datos...');
+    const datos = recopilarDatos();
+    await enviarASheets(datos);
+    setStatus('ok', '✓ Hoja de vida descargada y registro guardado exitosamente.');
 
-    const children = [];
-    const nombre = (v('nombres') + ' ' + v('apellidos')).trim() || 'Docente';
-
-    children.push(new Paragraph({
-      children: [new TextRun({ text: nombre, bold: true, size: 56, font: 'Arial', color: '185FA5' })],
-      alignment: AlignmentType.CENTER, spacing: { after: 60 }
-    }));
-
-    const contacto = [v('email'), v('telefono'), v('ciudad')].filter(Boolean).join('  |  ');
-    if (contacto) children.push(new Paragraph({
-      children: [new TextRun({ text: contacto, size: 20, font: 'Arial', color: '888780' })],
-      alignment: AlignmentType.CENTER, spacing: { after: 40 }
-    }));
-
-    if (v('linkedin')) children.push(new Paragraph({
-      children: [new ExternalHyperlink({ link: v('linkedin'), children: [new TextRun({ text: v('linkedin'), size: 18, font: 'Arial', color: '0A66C2', underline: {} })] })],
-      alignment: AlignmentType.CENTER, spacing: { after: 100 }
-    }));
-
-    children.push(divider());
-    children.push(h1('Información personal'));
-    [['Tipo de documento', v('tipo_doc')], ['Número de documento', v('num_doc')],
-     ['Fecha de nacimiento', v('fecha_nac')], ['Nacionalidad', v('nacionalidad')],
-     ['Ciudad de residencia', v('ciudad')]].forEach(([l,val]) => { const p=field(l,val); if(p) children.push(p); });
-    const li = linkField('LinkedIn', v('linkedin')); if(li) children.push(li);
-
-    if (v('perfil')) {
-      children.push(new Paragraph({ children: [new TextRun({ text: 'Perfil profesional', bold: true, size: 20, font: 'Arial', color: '5F5E5A' })], spacing: { before: 120, after: 40 } }));
-      children.push(new Paragraph({ children: [new TextRun({ text: v('perfil'), size: 20, font: 'Arial', italics: true })], spacing: { after: 100 } }));
-    }
-
-    const fc = cards('formacion-list');
-    if(fc.length) {
-      children.push(h1('Formación académica'));
-      fc.forEach(c => {
-        const id = c.id.replace('card-','');
-        children.push(h2((v(id+'_nivel')||'Título') + ' — ' + (v(id+'_titulo')||'')));
-        [field('Institución', v(id+'_inst')), field('País', v(id+'_pais'))].forEach(p => { if(p) children.push(p); });
-        const per = [v(id+'_inicio'), v(id+'_fin')].filter(Boolean).join(' – ');
-        if(per) children.push(field('Período', per));
-        children.push(sp());
-      });
-    }
-
-    const lc = cards('laboral-list');
-    if(lc.length) {
-      children.push(h1('Experiencia laboral'));
-      lc.forEach(c => {
-        const id = c.id.replace('card-','');
-        const actual = document.getElementById(id+'_actual')?.checked;
-        children.push(h2((v(id+'_cargo')||'Cargo') + ' — ' + (v(id+'_empresa')||'')));
-        if(v(id+'_sector')) children.push(field('Sector', v(id+'_sector')));
-        const per = [v(id+'_inicio'), actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
-        if(per) children.push(field('Período', per));
-        if(v(id+'_desc')) children.push(new Paragraph({ children: [new TextRun({ text: v(id+'_desc'), size: 20, font: 'Arial' })], spacing: { before: 60, after: 80 } }));
-        children.push(sp());
-      });
-    }
-
-    const dc = cards('docente-list');
-    if(dc.length) {
-      children.push(h1('Experiencia docente'));
-      dc.forEach(c => {
-        const id = c.id.replace('card-','');
-        const actual = document.getElementById(id+'_actual')?.checked;
-        children.push(h2((v(id+'_area')||'Área') + ' — ' + (v(id+'_inst')||'')));
-        [field('Modalidad', v(id+'_modal')), field('Nivel educativo', v(id+'_nivel'))].forEach(p => { if(p) children.push(p); });
-        const per = [v(id+'_inicio'), actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
-        if(per) children.push(field('Período', per));
-        children.push(sp());
-      });
-    }
-
-    const cc = cards('cursos-list');
-    if(cc.length) {
-      children.push(h1('Cursos dictados'));
-      cc.forEach(c => {
-        const id = c.id.replace('card-','');
-        children.push(h2(v(id+'_nombre')||'Curso'));
-        if(v(id+'_inst')) children.push(field('Institución / Plataforma', v(id+'_inst')));
-        if(v(id+'_horas')) children.push(field('Intensidad horaria', v(id+'_horas') + ' horas'));
-        const per = [v(id+'_inicio'), v(id+'_fin')].filter(Boolean).join(' – ');
-        if(per) children.push(field('Período', per));
-        children.push(sp());
-      });
-    }
-
-    const pc = cards('premios-list');
-    if(pc.length) {
-      children.push(h1('Premios y reconocimientos'));
-      pc.forEach(c => {
-        const id = c.id.replace('card-','');
-        children.push(h2(v(id+'_nombre')||'Premio'));
-        [field('Otorgado por', v(id+'_otorga')), field('Año', v(id+'_anio')),
-         field('Tipo', v(id+'_tipo')), field('Descripción', v(id+'_desc'))].forEach(p => { if(p) children.push(p); });
-        children.push(sp());
-      });
-    }
-
-    const pbc = cards('publicaciones-list');
-    if(pbc.length) {
-      children.push(h1('Publicaciones e investigaciones'));
-      pbc.forEach(c => {
-        const id = c.id.replace('card-','');
-        children.push(h2(v(id+'_titulo')||'Publicación'));
-        [field('Tipo', v(id+'_tipo')), field('Año', v(id+'_anio')),
-         field('Publicado en', v(id+'_revista')), field('DOI / URL', v(id+'_doi'))].forEach(p => { if(p) children.push(p); });
-        children.push(sp());
-      });
-    }
-
-    if(uploadedFiles.length) {
-      children.push(h1('Documentos adjuntos'));
-      children.push(new Paragraph({ children: [new TextRun({ text: 'Los siguientes documentos se entregan junto con esta hoja de vida:', size: 20, font: 'Arial', italics: true })], spacing: { after: 120 } }));
-      uploadedFiles.forEach((f,i) => {
-        children.push(new Paragraph({ children: [new TextRun({ text: `${i+1}. ${f.name}`, size: 20, font: 'Arial' })], spacing: { after: 60 } }));
-      });
-    }
-
-    children.push(divider());
-    const hoy = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
-    children.push(new Paragraph({
-      children: [new TextRun({ text: `Hoja de vida generada el ${hoy}`, size: 18, font: 'Arial', color: '888780', italics: true })],
-      alignment: AlignmentType.RIGHT, spacing: { before: 120 }
-    }));
-
-    const doc = new Document({
-      sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }]
-    });
-
-    const buffer = await Packer.toBuffer(doc);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `HojaVida_${nombre.replace(/\s+/g,'_')}.docx`; a.click();
-    URL.revokeObjectURL(url);
-
-    btn.textContent = '✓ Descargado'; btn.style.background = '#2e7d32';
-    setTimeout(() => { btn.disabled = false; btn.textContent = 'Descargar hoja de vida (.docx)'; btn.style.background = ''; }, 3000);
   } catch(e) {
-    alert('Error: ' + e.message);
-    btn.disabled = false; btn.textContent = 'Descargar hoja de vida (.docx)';
+    console.error(e);
+    setStatus('error', '⚠ El archivo se descargó, pero no se pudo registrar: ' + e.message + '. Por favor informe al administrador.');
   }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Descargar y registrar hoja de vida`;
+}
+
+async function generarDocx() {
+  const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, AlignmentType, BorderStyle } = docx;
+
+  function h1(text) {
+    return new Paragraph({
+      children: [new TextRun({ text, bold:true, size:36, color:'185FA5', font:'Arial' })],
+      spacing: { before:480, after:100 },
+      border: { bottom: { style:BorderStyle.SINGLE, size:8, color:'185FA5', space:4 } }
+    });
+  }
+  function h2(text) {
+    return new Paragraph({
+      children: [new TextRun({ text, bold:true, size:26, color:'333333', font:'Arial' })],
+      spacing: { before:260, after:80 }
+    });
+  }
+  function field(label, value) {
+    if(!value) return null;
+    return new Paragraph({
+      children: [new TextRun({ text:label+': ', bold:true, size:20, font:'Arial', color:'5F5E5A' }),
+                 new TextRun({ text:value, size:20, font:'Arial' })],
+      spacing: { after:60 }
+    });
+  }
+  function linkField(label, url) {
+    if(!url) return null;
+    return new Paragraph({
+      children: [new TextRun({ text:label+': ', bold:true, size:20, font:'Arial', color:'5F5E5A' }),
+                 new ExternalHyperlink({ link:url, children:[new TextRun({ text:url, size:20, font:'Arial', color:'185FA5', underline:{} })] })],
+      spacing: { after:60 }
+    });
+  }
+  function divider() {
+    return new Paragraph({ border:{ bottom:{ style:BorderStyle.SINGLE, size:2, color:'DDDDDD', space:1 } }, spacing:{ after:160 } });
+  }
+  function sp() { return new Paragraph({ spacing:{ after:100 } }); }
+
+  const children = [];
+  const nombre = (v('nombres')+' '+v('apellidos')).trim() || 'Docente';
+
+  children.push(new Paragraph({
+    children:[new TextRun({ text:nombre, bold:true, size:56, font:'Arial', color:'185FA5' })],
+    alignment:AlignmentType.CENTER, spacing:{ after:60 }
+  }));
+  const contacto=[v('email'),v('telefono'),v('ciudad')].filter(Boolean).join('  |  ');
+  if(contacto) children.push(new Paragraph({
+    children:[new TextRun({ text:contacto, size:20, font:'Arial', color:'888780' })],
+    alignment:AlignmentType.CENTER, spacing:{ after:40 }
+  }));
+  if(v('linkedin')) children.push(new Paragraph({
+    children:[new ExternalHyperlink({ link:v('linkedin'), children:[new TextRun({ text:v('linkedin'), size:18, font:'Arial', color:'0A66C2', underline:{} })] })],
+    alignment:AlignmentType.CENTER, spacing:{ after:100 }
+  }));
+  children.push(divider());
+
+  children.push(h1('Información personal'));
+  [['Tipo de documento',v('tipo_doc')],['Número de documento',v('num_doc')],
+   ['Fecha de nacimiento',v('fecha_nac')],['Nacionalidad',v('nacionalidad')],
+   ['Ciudad de residencia',v('ciudad')]].forEach(([l,val])=>{ const p=field(l,val); if(p) children.push(p); });
+  const li=linkField('LinkedIn',v('linkedin')); if(li) children.push(li);
+  if(v('perfil')) {
+    children.push(new Paragraph({ children:[new TextRun({ text:'Perfil profesional', bold:true, size:20, font:'Arial', color:'5F5E5A' })], spacing:{ before:120, after:40 } }));
+    children.push(new Paragraph({ children:[new TextRun({ text:v('perfil'), size:20, font:'Arial', italics:true })], spacing:{ after:100 } }));
+  }
+
+  const fc=cards('formacion-list');
+  if(fc.length) {
+    children.push(h1('Formación académica'));
+    fc.forEach(c=>{ const id=c.id.replace('card-','');
+      children.push(h2((v(id+'_nivel')||'Título')+' — '+(v(id+'_titulo')||'')));
+      [field('Institución',v(id+'_inst')),field('País',v(id+'_pais'))].forEach(p=>{ if(p) children.push(p); });
+      const per=[v(id+'_inicio'),v(id+'_fin')].filter(Boolean).join(' – ');
+      if(per) children.push(field('Período',per));
+      children.push(sp());
+    });
+  }
+
+  const lc=cards('laboral-list');
+  if(lc.length) {
+    children.push(h1('Experiencia laboral'));
+    lc.forEach(c=>{ const id=c.id.replace('card-','');
+      const actual=document.getElementById(id+'_actual')?.checked;
+      children.push(h2((v(id+'_cargo')||'Cargo')+' — '+(v(id+'_empresa')||'')));
+      if(v(id+'_sector')) children.push(field('Sector',v(id+'_sector')));
+      const per=[v(id+'_inicio'),actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
+      if(per) children.push(field('Período',per));
+      if(v(id+'_desc')) children.push(new Paragraph({ children:[new TextRun({ text:v(id+'_desc'), size:20, font:'Arial' })], spacing:{ before:60, after:80 } }));
+      children.push(sp());
+    });
+  }
+
+  const dc=cards('docente-list');
+  if(dc.length) {
+    children.push(h1('Experiencia docente'));
+    dc.forEach(c=>{ const id=c.id.replace('card-','');
+      const actual=document.getElementById(id+'_actual')?.checked;
+      children.push(h2((v(id+'_area')||'Área')+' — '+(v(id+'_inst')||'')));
+      [field('Modalidad',v(id+'_modal')),field('Nivel educativo',v(id+'_nivel'))].forEach(p=>{ if(p) children.push(p); });
+      const per=[v(id+'_inicio'),actual?'Actual':v(id+'_fin')].filter(Boolean).join(' – ');
+      if(per) children.push(field('Período',per));
+      children.push(sp());
+    });
+  }
+
+  const cc=cards('cursos-list');
+  if(cc.length) {
+    children.push(h1('Cursos dictados'));
+    cc.forEach(c=>{ const id=c.id.replace('card-','');
+      children.push(h2(v(id+'_nombre')||'Curso'));
+      if(v(id+'_inst')) children.push(field('Institución / Plataforma',v(id+'_inst')));
+      if(v(id+'_horas')) children.push(field('Intensidad horaria',v(id+'_horas')+' horas'));
+      const per=[v(id+'_inicio'),v(id+'_fin')].filter(Boolean).join(' – ');
+      if(per) children.push(field('Período',per));
+      children.push(sp());
+    });
+  }
+
+  const pc=cards('premios-list');
+  if(pc.length) {
+    children.push(h1('Premios y reconocimientos'));
+    pc.forEach(c=>{ const id=c.id.replace('card-','');
+      children.push(h2(v(id+'_nombre')||'Premio'));
+      [field('Otorgado por',v(id+'_otorga')),field('Año',v(id+'_anio')),
+       field('Tipo',v(id+'_tipo')),field('Descripción',v(id+'_desc'))].forEach(p=>{ if(p) children.push(p); });
+      children.push(sp());
+    });
+  }
+
+  const pbc=cards('publicaciones-list');
+  if(pbc.length) {
+    children.push(h1('Publicaciones e investigaciones'));
+    pbc.forEach(c=>{ const id=c.id.replace('card-','');
+      children.push(h2(v(id+'_titulo')||'Publicación'));
+      [field('Tipo',v(id+'_tipo')),field('Año',v(id+'_anio')),
+       field('Publicado en',v(id+'_revista')),field('DOI / URL',v(id+'_doi'))].forEach(p=>{ if(p) children.push(p); });
+      children.push(sp());
+    });
+  }
+
+  if(uploadedFiles.length) {
+    children.push(h1('Documentos adjuntos'));
+    children.push(new Paragraph({ children:[new TextRun({ text:'Los siguientes documentos se entregan junto con esta hoja de vida:', size:20, font:'Arial', italics:true })], spacing:{ after:120 } }));
+    uploadedFiles.forEach((f,i)=>{ children.push(new Paragraph({ children:[new TextRun({ text:`${i+1}. ${f.name}`, size:20, font:'Arial' })], spacing:{ after:60 } })); });
+  }
+
+  children.push(divider());
+  const hoy=new Date().toLocaleDateString('es-CO',{ year:'numeric', month:'long', day:'numeric' });
+  children.push(new Paragraph({
+    children:[new TextRun({ text:`Hoja de vida generada el ${hoy}`, size:18, font:'Arial', color:'888780', italics:true })],
+    alignment:AlignmentType.RIGHT, spacing:{ before:120 }
+  }));
+
+  const doc = new Document({
+    sections:[{ properties:{ page:{ size:{ width:11906, height:16838 }, margin:{ top:1440, right:1440, bottom:1440, left:1440 } } }, children }]
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  const blob = new Blob([buffer],{ type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`HojaVida_${nombre.replace(/\s+/g,'_')}.docx`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 addFormacion(); addLaboral(); addDocente();
